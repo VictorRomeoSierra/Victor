@@ -6,9 +6,30 @@
 # Set script to exit on error
 set -e
 
+# Parse command line arguments
+INSTALL_ML_PACKAGES=false
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    --with-ml)
+      INSTALL_ML_PACKAGES=true
+      shift
+      ;;
+    *)
+      # Unknown option
+      shift
+      ;;
+  esac
+done
+
+export INSTALL_ML_PACKAGES
+
 echo "========================================"
 echo "   Victor Deployment Script"
 echo "========================================"
+echo ""
+echo "ML Packages Installation: $INSTALL_ML_PACKAGES"
 echo ""
 
 # Navigate to project root

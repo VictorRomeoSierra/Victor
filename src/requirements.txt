@@ -8,25 +8,14 @@ httpx==0.25.1
 # Database
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
-asyncpg==0.28.0
 pgvector==0.2.3
 
-# Machine learning & NLP
-numpy==1.26.1
-# Optional - comment out if causing build issues on your platform
-transformers>=4.35.0
-# Optional - comment out if causing build issues on your platform
-# torch==2.1.0
-tokenizers>=0.14.1
-# Optional - comment out if causing build issues on your platform
-# sentence-transformers>=2.2.2
-llama-index>=0.9.3
-langchain>=0.0.325
-
-# Code parsing
+# Essential packages for code parsing
 tree-sitter>=0.20.1
-# lua-ast is not available for all platforms, will be installed manually if needed
-# lua-ast==0.1.7
+
+# Utilities
+requests==2.31.0
+tenacity==8.2.3
 
 # Testing and development
 pytest>=7.3.1
@@ -34,6 +23,18 @@ black>=23.3.0
 isort>=5.12.0
 mypy>=1.3.0
 
-# Utilities
-requests>=2.31.0
-tenacity>=8.2.3
+# IMPORTANT: The packages below are OPTIONAL and will be installed separately
+# in the Dockerfile to handle platform-specific issues
+# DO NOT UNCOMMENT THESE unless you're installing directly on a system
+# where you know they'll work
+
+# Optional ML packages (installed conditionally in Dockerfile)
+# numpy==1.26.1
+# transformers==4.35.0
+# torch==2.1.0
+# tokenizers==0.14.1
+# sentence-transformers==2.2.2
+# llama-index==0.9.3
+# langchain==0.0.325
+# asyncpg==0.28.0
+# lua-ast==0.1.7
