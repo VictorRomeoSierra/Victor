@@ -17,6 +17,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Try to install platform-specific packages separately
+RUN pip install lua-ast==0.1.7 || echo "lua-ast could not be installed, will be handled manually if needed"
+RUN pip install torch==2.1.0 || pip install --index-url https://download.pytorch.org/whl/cpu torch==2.1.0 || echo "torch could not be installed, will be handled manually if needed"
+RUN pip install sentence-transformers==2.2.2 || echo "sentence-transformers could not be installed, will be handled manually if needed"
+
 # Copy source code
 COPY . /app/src
 
