@@ -36,12 +36,10 @@ services:
       - DB_POSTGRESDB_DATABASE=vectordb
       - DB_POSTGRESDB_USER=dcs_user
       - DB_POSTGRESDB_PASSWORD=secure_password
-      - N8N_HOST=${N8N_HOST:-ai.victorromeosierra.com}
+      - N8N_HOST=${N8N_HOST:-n8n.victorromeosierra.com}
       - N8N_PORT=5678
-      - N8N_PATH=/n8n
-      - N8N_BASE_PATH=/n8n
       - NODE_ENV=production
-      - WEBHOOK_URL=${WEBHOOK_URL:-https://ai.victorromeosierra.com/n8n/}
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://n8n.victorromeosierra.com/}
       - EXECUTIONS_PROCESS=main
       - VICTOR_API_URL=http://host.docker.internal:8000
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
