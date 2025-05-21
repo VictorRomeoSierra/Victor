@@ -23,9 +23,7 @@ Victor/
 │   ├── embedding/        # Embedding and retrieval code
 │   ├── requirements.txt  # Python dependencies
 │   └── setup.py          # Package setup
-├── .env                  # Environment variables (created from .env.example)
-├── deploy.sh             # Wrapper script for scripts/deploy.sh
-└── run.sh                # Wrapper script for scripts/run.sh
+└── .env                  # Environment variables (created from .env.example)
 ```
 
 ## Getting Started
@@ -44,7 +42,7 @@ Victor/
 
 2. Run the deployment script:
    ```bash
-   ./deploy.sh
+   ./scripts/deploy.sh
    ```
 
 3. The script will:
@@ -58,16 +56,16 @@ Use the run.sh script to manage services:
 
 ```bash
 # Start all services
-./run.sh up
+./scripts/run.sh up
 
 # Stop all services
-./run.sh down
+./scripts/run.sh down
 
 # View logs
-./run.sh logs
+./scripts/run.sh logs
 
 # Check service status
-./run.sh status
+./scripts/run.sh status
 ```
 
 ## Technical Stack
