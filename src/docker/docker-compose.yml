@@ -39,7 +39,7 @@ services:
       - NODE_ENV=production
       - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
       - EXECUTIONS_PROCESS=main
-      - VICTOR_API_URL=http://victor-api:8000
+      - VICTOR_API_URL=http://host.docker.internal:8000
     volumes:
       - n8n_storage:/home/node/.n8n
       - ../automation/workflows:/home/node/.n8n/workflows
