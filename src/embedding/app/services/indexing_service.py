@@ -138,6 +138,39 @@ class IndexingService:
             logger.error(f"Error indexing file {file_path}: {e}")
             return False
     
+    def _should_exclude_file(self, file_path: str) -> bool:
+        """
+        Check if a file should be excluded from indexing.
+        """
+        # Normalize path separators
+        normalized_path = os.path.normpath(file_path)
+        
+        # Exclusion patterns
+        exclusion_patterns = [
+            # Directories to exclude completely
+            os.sep + "XSAF.DB" + os.sep,
+            os.sep + "Moose" + os.sep,
+            # Files to exclude
+            "Mist.lua",
+            # Common exclusions
+            os.sep + ".git" + os.sep,
+            os.sep + "node_modules" + os.sep,
+            os.sep + "vendor" + os.sep,
+        ]
+        
+        # Check each exclusion pattern
+        for pattern in exclusion_patterns:
+            if pattern in normalized_path:
+                return True
+        
+        # Check if file ends with excluded filenames
+        filename = os.path.basename(file_path)
+        excluded_filenames = ["Mist.lua"]
+        if filename in excluded_filenames:
+            return True
+            
+        return False
+
     async def index_directory(
         self,
         db: AsyncSession,
@@ -156,9 +189,15 @@ class IndexingService:
             
             # Find all matching files
             pattern = os.path.join(directory_path, "**", file_pattern) if recursive else os.path.join(directory_path, file_pattern)
-            files = glob.glob(pattern, recursive=recursive)
+            all_files = glob.glob(pattern, recursive=recursive)
             
-            logger.info(f"Found {len(files)} files matching pattern {file_pattern} in {directory_path}")
+            # Filter out excluded files
+            files = [f for f in all_files if not self._should_exclude_file(f)]
+            excluded_count = len(all_files) - len(files)
+            
+            logger.info(f"Found {len(all_files)} files matching pattern {file_pattern} in {directory_path}")
+            logger.info(f"Excluded {excluded_count} files based on exclusion patterns")
+            logger.info(f"Will index {len(files)} files")
             
             # Index each file
             indexed = 0
@@ -174,7 +213,8 @@ class IndexingService:
             return {
                 "success": True,
                 "indexed": indexed,
-                "failed": failed
+                "failed": failed,
+                "excluded": excluded_count
             }
             
         except Exception as e:

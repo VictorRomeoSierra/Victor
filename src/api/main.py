@@ -2,6 +2,8 @@ from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 import os
+import httpx
+import asyncio
 
 app = FastAPI(title="Victor API", description="API for Victor DCS Lua coding assistant")
 
@@ -11,6 +13,11 @@ class EnhancePromptRequest(BaseModel):
 
 class EnhancePromptResponse(BaseModel):
     enhanced_prompt: str
+
+class ReindexRequest(BaseModel):
+    directory_path: str
+    recursive: bool = True
+    file_pattern: str = "*.lua"
 
 @app.get("/")
 async def root():
@@ -52,6 +59,55 @@ async def enhance_prompt(request: EnhancePromptRequest):
     
     # Return original prompt if not DCS-related
     return {"enhanced_prompt": query}
+
+@app.post("/reindex")
+async def reindex_codebase(request: ReindexRequest):
+    """
+    Trigger re-indexing of the codebase with updated exclusions.
+    """
+    try:
+        # Call the embedding service to reindex
+        embedding_service_url = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:8001")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{embedding_service_url}/index/directory",
+                params={
+                    "directory_path": request.directory_path,
+                    "recursive": request.recursive,
+                    "file_pattern": request.file_pattern
+                }
+            )
+            
+            if response.status_code == 202:
+                return {
+                    "status": "success", 
+                    "message": f"Reindexing of {request.directory_path} started with exclusions: XSAF.DB/, Moose/, Mist.lua"
+                }
+            else:
+                raise HTTPException(status_code=500, detail=f"Failed to start reindexing: {response.text}")
+                
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting reindex: {str(e)}")
+
+@app.get("/index/stats")
+async def get_index_stats():
+    """
+    Get statistics about the current index.
+    """
+    try:
+        embedding_service_url = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:8001")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{embedding_service_url}/stats")
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise HTTPException(status_code=500, detail=f"Failed to get stats: {response.text}")
+                
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting stats: {str(e)}")
 
 def is_dcs_related(query: str) -> bool:
     """
