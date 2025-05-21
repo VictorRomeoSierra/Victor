@@ -31,23 +31,31 @@ if ! command -v docker &> /dev/null; then
 fi
 
 echo "Checking Docker Compose..."
-if ! command -v docker-compose &> /dev/null; then
+if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
   echo "Docker Compose is not installed. Please install Docker Compose first."
   exit 1
+fi
+
+# Determine Docker Compose command
+if command -v docker-compose &> /dev/null; then
+  DOCKER_COMPOSE="docker-compose"
+else
+  DOCKER_COMPOSE="docker compose"
 fi
 
 echo "Pulling latest code from GitHub..."
 git pull origin main
 
-echo "Copying .env file to src/docker directory..."
+echo "Preparing build environment..."
 cp "$PROJECT_ROOT/.env" "$PROJECT_ROOT/src/docker/.env"
+cp "$PROJECT_ROOT/src/requirements.txt" "$PROJECT_ROOT/src/docker/requirements.txt"
 
 echo "Building Victor API service..."
 cd "$PROJECT_ROOT/src/docker"
-docker-compose build victor-api
+$DOCKER_COMPOSE build victor-api
 
 echo "Starting Victor services..."
-docker-compose up -d
+$DOCKER_COMPOSE up -d
 
 echo "========================================"
 echo "Services should now be running:"
@@ -64,10 +72,10 @@ echo "========================================"
 
 # Check if services are running
 echo "Checking service status..."
-docker-compose ps
+$DOCKER_COMPOSE ps
 
 echo ""
-echo "For logs, use: docker-compose logs -f"
-echo "To stop services: docker-compose down"
+echo "For logs, use: $DOCKER_COMPOSE logs -f"
+echo "To stop services: $DOCKER_COMPOSE down"
 echo ""
 echo "Deployment complete!"

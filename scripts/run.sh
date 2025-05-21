@@ -8,6 +8,13 @@ set -e
 # Navigate to the docker directory from scripts
 cd "$(dirname "$0")/../src/docker"
 
+# Determine Docker Compose command
+if command -v docker-compose &> /dev/null; then
+  DOCKER_COMPOSE="docker-compose"
+else
+  DOCKER_COMPOSE="docker compose"
+fi
+
 # Function to display usage information
 function show_usage {
     echo "Usage: ./run.sh [command]"
@@ -28,35 +35,35 @@ function show_usage {
 case "$1" in
     up)
         echo "Starting Victor services..."
-        docker-compose up -d
+        $DOCKER_COMPOSE up -d
         ;;
     down)
         echo "Stopping Victor services..."
-        docker-compose down
+        $DOCKER_COMPOSE down
         ;;
     restart)
         echo "Restarting Victor services..."
-        docker-compose restart
+        $DOCKER_COMPOSE restart
         ;;
     logs)
         echo "Showing logs for Victor services..."
-        docker-compose logs -f
+        $DOCKER_COMPOSE logs -f
         ;;
     api)
         echo "Starting Victor API service..."
-        docker-compose up -d victor-api
+        $DOCKER_COMPOSE up -d victor-api
         ;;
     n8n)
         echo "Starting n8n service..."
-        docker-compose up -d n8n
+        $DOCKER_COMPOSE up -d n8n
         ;;
     status)
         echo "Status of Victor services:"
-        docker-compose ps
+        $DOCKER_COMPOSE ps
         ;;
     build)
         echo "Rebuilding Victor API service..."
-        docker-compose build victor-api
+        $DOCKER_COMPOSE build victor-api
         ;;
     help|*)
         show_usage
