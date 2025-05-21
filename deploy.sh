@@ -35,6 +35,9 @@ fi
 echo "Pulling latest code from GitHub..."
 git pull origin main
 
+echo "Copying .env file to src/docker directory..."
+cp .env src/docker/.env
+
 echo "Building Victor API service..."
 cd src/docker
 docker-compose build victor-api
@@ -49,6 +52,10 @@ echo "- n8n: http://localhost:5678"
 echo ""
 echo "Don't forget to update your Nginx configuration to route:"
 echo "- /n8n/ path to http://localhost:5678"
+echo ""
+echo "Note for MacOS: If you encounter host.docker.internal resolution issues,"
+echo "you can add it to your /etc/hosts file with your local IP:"
+echo "  127.0.0.1 host.docker.internal"
 echo "========================================"
 
 # Check if services are running

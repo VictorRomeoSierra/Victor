@@ -1,3 +1,5 @@
+version: '3.7'
+
 services:
   # Victor API Service
   victor-api:
@@ -34,7 +36,7 @@ services:
       - DB_POSTGRESDB_DATABASE=vectordb
       - DB_POSTGRESDB_USER=dcs_user
       - DB_POSTGRESDB_PASSWORD=secure_password
-      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_HOST=${N8N_HOST:-ai.victorromeosierra.com}
       - N8N_PORT=5678
       - NODE_ENV=production
       - WEBHOOK_URL=${WEBHOOK_URL:-https://ai.victorromeosierra.com/n8n/}
