@@ -40,9 +40,10 @@ RUN if [ "$INSTALL_ML_PACKAGES" = "true" ] ; then \
 # Copy source code
 COPY . /app/src
 
-# Install the package
+# Install directly instead of using setup.py
 WORKDIR /app
-RUN pip install -e src
+# No need for pip install -e src since we're using the code directly
 
-# Run the application
+# Add src to Python path and run the application
+ENV PYTHONPATH=/app:$PYTHONPATH
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
