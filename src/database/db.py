@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from typing import Dict, List, Optional, Any, Tuple
 
 import psycopg2
@@ -10,7 +11,8 @@ class VectorDB:
                  port: int = None, 
                  dbname: str = None, 
                  user: str = None, 
-                 password: str = None):
+                 password: str = None,
+                 database_url: str = None):
         """
         Initialize the vector database connection.
         
@@ -20,12 +22,26 @@ class VectorDB:
             dbname: Database name
             user: Database user
             password: Database password
+            database_url: Full database URL (overrides other parameters if provided)
         """
-        self.host = host or os.getenv("POSTGRES_HOST", "localhost")
-        self.port = port or int(os.getenv("POSTGRES_PORT", "5432"))
-        self.dbname = dbname or os.getenv("POSTGRES_DB", "vectordb")
-        self.user = user or os.getenv("POSTGRES_USER", "victor_user")
-        self.password = password or os.getenv("POSTGRES_PASSWORD", "")
+        # Check if DATABASE_URL environment variable is provided
+        database_url = database_url or os.getenv("DATABASE_URL")
+        
+        if database_url:
+            # Parse the database URL
+            result = urllib.parse.urlparse(database_url)
+            self.user = result.username
+            self.password = result.password
+            self.host = result.hostname
+            self.port = result.port
+            self.dbname = result.path[1:]  # Remove leading slash
+        else:
+            # Use individual parameters or environment variables
+            self.host = host or os.getenv("POSTGRES_HOST", "host.docker.internal")
+            self.port = port or int(os.getenv("POSTGRES_PORT", "5433"))
+            self.dbname = dbname or os.getenv("POSTGRES_DB", "vectordb")
+            self.user = user or os.getenv("POSTGRES_USER", "dcs_user")
+            self.password = password or os.getenv("POSTGRES_PASSWORD", "secure_password")
         
         self.conn = None
         
