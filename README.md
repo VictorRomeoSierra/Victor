@@ -7,20 +7,25 @@ Victor is an AI-powered coding assistant designed to help VRS community develope
 
 ```
 Victor/
-├── .claude/               # Claude reference files
-├── ai_docs/               # AI-specific documentation
-│   ├── model_selection/   # Model evaluation and selection docs
-│   ├── architecture/      # AI architecture documentation
-│   └── examples/          # Example prompts and responses
-├── specs/                 # Project specifications
-├── src/                   # Source code
-│   ├── api/               # API endpoints
-│   ├── docker/            # Docker configuration
-│   ├── database/          # Database schemas and scripts
-│   ├── embedding/         # Embedding and retrieval code
-│   ├── ui/                # Web UI customization
-│   ├── ide/               # IDE integration code
-│   └── automation/        # N8N workflows and scripts
+├── config/               # Configuration files
+│   └── .env.example      # Example environment variables
+├── docs/                 # Documentation
+│   ├── nginx-config.md   # Nginx configuration guide
+│   └── troubleshooting.md # Troubleshooting guide
+├── scripts/              # Deployment and utility scripts
+│   ├── deploy.sh         # Deployment script
+│   └── run.sh            # Service management script
+├── specs/                # Project specifications
+├── src/                  # Source code
+│   ├── api/              # API endpoints
+│   ├── database/         # Database schemas and scripts
+│   ├── docker/           # Docker configuration
+│   ├── embedding/        # Embedding and retrieval code
+│   ├── requirements.txt  # Python dependencies
+│   └── setup.py          # Package setup
+├── .env                  # Environment variables (created from .env.example)
+├── deploy.sh             # Wrapper script for scripts/deploy.sh
+└── run.sh                # Wrapper script for scripts/run.sh
 ```
 
 ## Getting Started
@@ -31,9 +36,39 @@ Victor/
 - Git
 
 ### Setup Instructions
-1. Clone this repository
-2. Run the setup script: `./setup.sh`
-3. Follow the configuration wizard
+1. Clone this repository:
+   ```bash
+   git clone git@github.com:VictorRomeoSierra/Victor.git
+   cd Victor
+   ```
+
+2. Run the deployment script:
+   ```bash
+   ./deploy.sh
+   ```
+
+3. The script will:
+   - Create a .env file from config/.env.example if none exists
+   - Build and start the necessary Docker containers
+   - Show service status
+
+## Service Management
+
+Use the run.sh script to manage services:
+
+```bash
+# Start all services
+./run.sh up
+
+# Stop all services
+./run.sh down
+
+# View logs
+./run.sh logs
+
+# Check service status
+./run.sh status
+```
 
 ## Technical Stack
 - **Ollama**: Local LLM execution
@@ -41,18 +76,24 @@ Victor/
 - **Open-WebUI**: Web interface
 - **N8N**: Automation workflows
 - **Docker**: Containerization
-- **Nginx**: Reverse proxy
+- **FastAPI**: API framework
 
 ## Development
 
-### Local Development
-Instructions for local development setup will be added here.
+See [docs/](docs/) for more detailed documentation, including:
+- Nginx configuration
+- Troubleshooting
+- Environment setup
 
-### Testing
-Testing procedures and frameworks will be documented here.
+## Project Specifications
+
+See [specs/](specs/) for detailed specifications, including:
+- Architecture design
+- Implementation plans
+- Integration details
 
 ## Contributing
-Guidelines for contributing to the project will be added here.
+Guidelines for contributing to the project will be added soon.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
