@@ -1,0 +1,250 @@
+{
+  "name": "GitHub Repository Update",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-webhook",
+        "options": {}
+      },
+      "name": "GitHub Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"GitHub Webhook\"].json[\"headers\"][\"x-github-event\"]}}",
+              "operation": "equals",
+              "value2": "push"
+            }
+          ]
+        }
+      },
+      "name": "Is Push Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"GitHub Webhook\"].json[\"body\"][\"ref\"]}}",
+              "operation": "contains",
+              "value2": "main"
+            }
+          ]
+        }
+      },
+      "name": "Is Main Branch?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Get modified files\nconst payload = items[0].json.body;\nconst modifiedFiles = [];\n\n// Extract all modified files from the commits\nif (payload.commits && Array.isArray(payload.commits)) {\n  for (const commit of payload.commits) {\n    if (commit.added) modifiedFiles.push(...commit.added);\n    if (commit.modified) modifiedFiles.push(...commit.modified);\n    if (commit.removed) modifiedFiles.push(...commit.removed);\n  }\n}\n\n// Filter for Lua files\nconst luaFiles = modifiedFiles.filter(file => file.endsWith('.lua'));\n\n// Create a unique list\nconst uniqueLuaFiles = [...new Set(luaFiles)];\n\n// Prepare output with repository info\nreturn [\n  {\n    json: {\n      repository: payload.repository.full_name,\n      branch: payload.ref.replace('refs/heads/', ''),\n      modified_files: uniqueLuaFiles,\n      total_lua_files: uniqueLuaFiles.length,\n      commit_count: payload.commits ? payload.commits.length : 0,\n      pusher: payload.pusher ? payload.pusher.name : 'unknown',\n      timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "name": "Extract Modified Files",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Extract Modified Files\"].json[\"total_lua_files\"]}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Has Lua Files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cd /home/flamernz/Dev/XSAF && git pull"
+      },
+      "name": "Pull Latest Code",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://victor-retrieval:8000/index/directory",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "directory_path",
+              "value": "/home/flamernz/Dev/XSAF"
+            },
+            {
+              "name": "recursive",
+              "value": "true"
+            },
+            {
+              "name": "file_pattern",
+              "value": "*.lua"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Trigger Reindexing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://victor-retrieval:8000/stats",
+        "options": {}
+      },
+      "name": "Get Updated Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=🔄 Repository Updated!\n\nRepository: {{$node[\"Extract Modified Files\"].json[\"repository\"]}}\nBranch: {{$node[\"Extract Modified Files\"].json[\"branch\"]}}\nLua Files Changed: {{$node[\"Extract Modified Files\"].json[\"total_lua_files\"]}}\nCommits: {{$node[\"Extract Modified Files\"].json[\"commit_count\"]}}\nPusher: {{$node[\"Extract Modified Files\"].json[\"pusher\"]}}\n\nReindexing Complete!\nTotal Files: {{$node[\"Get Updated Stats\"].json[\"files\"]}}\nTotal Chunks: {{$node[\"Get Updated Stats\"].json[\"chunks\"]}}\nTotal Embeddings: {{$node[\"Get Updated Stats\"].json[\"embeddings\"]}}",
+        "options": {}
+      },
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is Push Event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Push Event?": {
+      "main": [
+        [
+          {
+            "node": "Is Main Branch?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Main Branch?": {
+      "main": [
+        [
+          {
+            "node": "Extract Modified Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Modified Files": {
+      "main": [
+        [
+          {
+            "node": "Has Lua Files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Lua Files?": {
+      "main": [
+        [
+          {
+            "node": "Pull Latest Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull Latest Code": {
+      "main": [
+        [
+          {
+            "node": "Trigger Reindexing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Reindexing": {
+      "main": [
+        [
+          {
+            "node": "Get Updated Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Updated Stats": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

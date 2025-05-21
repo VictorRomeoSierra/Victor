@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # Ollama for local LLM execution
+  ollama:
+    image: ollama/ollama:latest
+    container_name: victor-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+  # PostgreSQL with pgvector for vector database
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: victor-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: victor
+      POSTGRES_USER: victor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeThisPassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+  # OpenWebUI for web interface
+  webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: victor-webui
+    ports:
+      - "3000:3000"
+    environment:
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+      - DEFAULT_MODELS=vicoder
+      - WEBUI_AUTH=true
+    volumes:
+      - webui_data:/app/backend/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+  # N8N for automation workflows
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: victor-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-changeThisPassword}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./automation/workflows:/home/node/.n8n/workflows
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+  # LiteServer for retrieval and embedding
+  retrieval:
+    build:
+      context: .
+      dockerfile: ./embedding/Dockerfile
+    container_name: victor-retrieval
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=victor
+      - POSTGRES_USER=victor
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeThisPassword}
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+    volumes:
+      - ./embedding:/app
+    depends_on:
+      - postgres
+      - ollama
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+  # Nginx for reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: victor-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/www:/usr/share/nginx/html
+    depends_on:
+      - webui
+      - n8n
+      - retrieval
+    restart: unless-stopped
+    networks:
+      - victor-network
+
+volumes:
+  ollama_data:
+  postgres_data:
+  webui_data:
+  n8n_data:
+
+networks:
+  victor-network:
+    driver: bridge
