@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   # Victor API Service
   victor-api:
