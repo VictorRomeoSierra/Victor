@@ -37,9 +37,10 @@ services:
       - N8N_HOST=${N8N_HOST:-localhost}
       - N8N_PORT=5678
       - NODE_ENV=production
-      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://ai.victorromeosierra.com/n8n/}
       - EXECUTIONS_PROCESS=main
       - VICTOR_API_URL=http://host.docker.internal:8000
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
     volumes:
       - n8n_storage:/home/node/.n8n
       - ../automation/workflows:/home/node/.n8n/workflows
