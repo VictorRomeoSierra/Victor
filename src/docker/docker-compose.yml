@@ -39,6 +39,7 @@ services:
       - N8N_HOST=${N8N_HOST:-ai.victorromeosierra.com}
       - N8N_PORT=5678
       - N8N_PATH=/n8n
+      - N8N_BASE_PATH=/n8n
       - NODE_ENV=production
       - WEBHOOK_URL=${WEBHOOK_URL:-https://ai.victorromeosierra.com/n8n/}
       - EXECUTIONS_PROCESS=main
