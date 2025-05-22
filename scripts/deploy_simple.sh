@@ -6,7 +6,15 @@ echo "=== Deploying Victor API (Simplified) ==="
 echo "This version uses Ollama for embeddings and doesn't require PyTorch"
 echo
 
-cd "$(dirname "$0")/../src/docker"
+PROJECT_ROOT="$(dirname "$0")/.."
+cd "$PROJECT_ROOT"
+
+# Copy necessary files to docker directory
+echo "Preparing build context..."
+cp "$PROJECT_ROOT/src/requirements.txt" "$PROJECT_ROOT/src/docker/requirements.txt"
+[ -f "$PROJECT_ROOT/.env" ] && cp "$PROJECT_ROOT/.env" "$PROJECT_ROOT/src/docker/.env"
+
+cd "$PROJECT_ROOT/src/docker"
 
 # Stop existing services
 echo "Stopping existing services..."
