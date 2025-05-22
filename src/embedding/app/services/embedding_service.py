@@ -6,9 +6,16 @@ Ported from dcs-lua-analyzer project
 
 import os
 import numpy as np
-import torch
 import logging
 from typing import List, Dict, Any, Optional, Union
+
+# Conditional torch import - only needed for sentence_transformers
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    TORCH_AVAILABLE = False
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert
 from dotenv import load_dotenv
@@ -50,12 +57,18 @@ class EmbeddingService:
     
     def _init_sentence_transformers(self):
         """Initialize Sentence Transformers model."""
+        if not TORCH_AVAILABLE:
+            raise ValueError("PyTorch is required for sentence_transformers but is not installed")
+        
         try:
             from sentence_transformers import SentenceTransformer
             self.model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
             self.model = SentenceTransformer(self.model_name)
             self.embedding_dim = self.model.get_sentence_embedding_dimension()
             logger.info(f"Sentence Transformers model loaded. Dimension: {self.embedding_dim}")
+        except ImportError:
+            logger.error("sentence_transformers is not installed")
+            raise
         except Exception as e:
             logger.error(f"Failed to load Sentence Transformers model: {e}")
             raise
@@ -93,7 +106,7 @@ class EmbeddingService:
     
     async def _generate_st_embedding(self, text: str) -> np.ndarray:
         """Generate embedding using Sentence Transformers."""
-        if torch.cuda.is_available():
+        if TORCH_AVAILABLE and torch.cuda.is_available():
             self.model = self.model.to("cuda")
         return self.model.encode(text)
     
@@ -171,7 +184,7 @@ class EmbeddingService:
         try:
             if self.provider == "sentence_transformers":
                 # Ensure the model is on the correct device
-                if torch.cuda.is_available():
+                if TORCH_AVAILABLE and torch.cuda.is_available():
                     self.model = self.model.to("cuda")
                 return self.model.encode(texts)
             else:

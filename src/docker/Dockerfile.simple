@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install only essential packages for Ollama-based embeddings
+RUN pip install --no-cache-dir \
+    numpy==1.26.1 \
+    asyncpg==0.28.0
+
+# Copy source code
+COPY . /app/src
+
+# Add src to Python path and run the application
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
