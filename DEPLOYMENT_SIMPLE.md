@@ -73,7 +73,7 @@ curl http://localhost:11434/api/tags
 
 2. **Verify database connection:**
 ```bash
-docker exec postgres-vector psql -U postgres -d vectordb -c "SELECT COUNT(*) FROM lua_chunks;"
+docker exec postgres-vector psql -U dcs_user -d vectordb -c "SELECT COUNT(*) FROM lua_chunks;"
 ```
 
 3. **Check Victor API logs:**

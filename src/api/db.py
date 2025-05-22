@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database URL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@skyeye-server:5433/vectordb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://dcs_user:secure_password@skyeye-server:5433/vectordb")
 
 # Create async engine
 engine = create_async_engine(

@@ -70,7 +70,7 @@ import asyncpg
 import os
 
 async def test_db():
-    db_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@host.docker.internal:5433/vectordb')
+    db_url = os.getenv('DATABASE_URL', 'postgresql://dcs_user:secure_password@host.docker.internal:5433/vectordb')
     print(f'Testing connection to: {db_url}')
     try:
         # Parse the URL for asyncpg

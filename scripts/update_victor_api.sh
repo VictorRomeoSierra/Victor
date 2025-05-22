@@ -52,7 +52,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     cp "$PROJECT_ROOT/src/database/init/02-lua-chunks.sql" /tmp/02-lua-chunks.sql
     
     # Run the migration inside the postgres-vector container
-    docker exec -i postgres-vector psql -U postgres -d vectordb < /tmp/02-lua-chunks.sql
+    docker exec -i postgres-vector psql -U dcs_user -d vectordb < /tmp/02-lua-chunks.sql
     
     if [ $? -eq 0 ]; then
         echo "✓ Migration applied successfully"
@@ -60,7 +60,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         echo "⚠️  Migration failed. Please check the error and try again."
         echo "You can manually run:"
-        echo "docker exec -i postgres-vector psql -U postgres -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
+        echo "docker exec -i postgres-vector psql -U dcs_user -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
         exit 1
     fi
 else
@@ -69,7 +69,7 @@ else
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Please apply the migration first. You can run:"
-        echo "docker exec -i postgres-vector psql -U postgres -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
+        echo "docker exec -i postgres-vector psql -U dcs_user -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
         exit 1
     fi
 fi
