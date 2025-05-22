@@ -12,19 +12,27 @@ import os
 import sys
 import logging
 
-# Add parent directory to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import embedding app services
-from embedding.app.services.retrieval_service import RetrievalService
-from embedding.app.services.embedding_service import EmbeddingService
-
-# Import database session
-from api.db import get_db
-
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add parent directory to path for imports
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+logger.info(f"Python path: {sys.path}")
+logger.info(f"Working directory: {os.getcwd()}")
+
+try:
+    # Import embedding app services
+    from embedding.app.services.retrieval_service import RetrievalService
+    from embedding.app.services.embedding_service import EmbeddingService
+    
+    # Import database session
+    from api.db import get_db
+except ImportError as e:
+    logger.error(f"Import error: {e}")
+    raise
 
 app = FastAPI(title="Victor API", description="API for Victor DCS Lua coding assistant")
 

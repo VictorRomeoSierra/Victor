@@ -13,13 +13,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert
 from dotenv import load_dotenv
 
-from app.models import Embedding
-
 # Load environment variables
 load_dotenv()
 
 # Configure logging
 logger = logging.getLogger("victor-embedding-service")
+
+# We'll handle the model import error gracefully for now
+try:
+    from app.models import Embedding
+except ImportError:
+    # If models aren't available, we'll skip the database operations
+    Embedding = None
+    logger.warning("Could not import Embedding model - database operations will be disabled")
 
 class EmbeddingService:
     """

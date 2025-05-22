@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 import numpy as np
 
-from app.services.embedding_service import EmbeddingService
+from .embedding_service import EmbeddingService
 
 # Load environment variables
 load_dotenv()
