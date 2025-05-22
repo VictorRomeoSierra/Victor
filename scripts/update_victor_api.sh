@@ -44,12 +44,34 @@ echo "The following SQL needs to be run on your PostgreSQL database:"
 echo "----------------------------------------"
 cat "$PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
 echo "----------------------------------------"
-read -p "Have you applied this migration to the database? (y/n): " -n 1 -r
+read -p "Would you like to apply this migration now? (y/n): " -n 1 -r
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Please apply the migration first. You can run:"
-    echo "psql -h skyeye-server -p 5433 -U postgres -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
-    exit 1
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Applying migration..."
+    # Copy the SQL file to a temporary location
+    cp "$PROJECT_ROOT/src/database/init/02-lua-chunks.sql" /tmp/02-lua-chunks.sql
+    
+    # Run the migration inside the postgres-vector container
+    docker exec -i postgres-vector psql -U postgres -d vectordb < /tmp/02-lua-chunks.sql
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ Migration applied successfully"
+        rm /tmp/02-lua-chunks.sql
+    else
+        echo "⚠️  Migration failed. Please check the error and try again."
+        echo "You can manually run:"
+        echo "docker exec -i postgres-vector psql -U postgres -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
+        exit 1
+    fi
+else
+    echo "Skipping migration. Make sure it has been applied before continuing!"
+    read -p "Has the migration been applied already? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Please apply the migration first. You can run:"
+        echo "docker exec -i postgres-vector psql -U postgres -d vectordb < $PROJECT_ROOT/src/database/init/02-lua-chunks.sql"
+        exit 1
+    fi
 fi
 
 # Step 3: Build and deploy

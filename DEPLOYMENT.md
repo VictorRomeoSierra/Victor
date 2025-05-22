@@ -38,7 +38,12 @@ SEARCH_LIMIT=10
 
 Run the migration to create the `lua_chunks` table (if not already present):
 ```bash
-psql -h skyeye-server -p 5433 -U postgres -d vectordb < src/database/init/02-lua-chunks.sql
+# Using Docker exec to run in the postgres-vector container
+docker exec -i postgres-vector psql -U postgres -d vectordb < src/database/init/02-lua-chunks.sql
+
+# Or copy the file first if you have issues with input redirection
+docker cp src/database/init/02-lua-chunks.sql postgres-vector:/tmp/
+docker exec postgres-vector psql -U postgres -d vectordb -f /tmp/02-lua-chunks.sql
 ```
 
 ### 4. Deploy Victor API
@@ -109,8 +114,18 @@ curl -X POST https://n8n.victorromeosierra.com/webhook-test/victor-chat \
 - Check logs for embedding errors
 
 ### Search Returns No Results
-- Verify the lua_chunks table has data
-- Check if embeddings are present: `SELECT COUNT(*) FROM lua_chunks WHERE embedding IS NOT NULL;`
+- Verify the lua_chunks table exists:
+  ```bash
+  docker exec postgres-vector psql -U postgres -d vectordb -c "\dt lua_chunks"
+  ```
+- Check if the table has data:
+  ```bash
+  docker exec postgres-vector psql -U postgres -d vectordb -c "SELECT COUNT(*) FROM lua_chunks;"
+  ```
+- Check if embeddings are present:
+  ```bash
+  docker exec postgres-vector psql -U postgres -d vectordb -c "SELECT COUNT(*) FROM lua_chunks WHERE embedding IS NOT NULL;"
+  ```
 - Try text search first to rule out embedding issues
 
 ## Maintenance
