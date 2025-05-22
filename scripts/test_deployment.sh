@@ -55,11 +55,18 @@ test_endpoint "Prompt Enhancement" "POST" "/enhance_prompt" '{"prompt":"How do I
 
 # Check if Ollama is accessible from container
 echo "Checking Ollama connectivity..."
-docker exec $(docker ps -q -f name=victor-api) curl -s http://host.docker.internal:11434/api/tags > /dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} Ollama is accessible from container"
+# Find the actual container name (might be prefixed with directory name)
+CONTAINER_ID=$(docker ps -q -f name=victor-api | head -1)
+if [ ! -z "$CONTAINER_ID" ]; then
+    docker exec $CONTAINER_ID curl -s http://host.docker.internal:11434/api/tags > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓${NC} Ollama is accessible from container"
+    else
+        echo -e "${RED}✗${NC} Cannot reach Ollama from container"
+        echo "  Run ./scripts/debug_ollama_connection.sh for details"
+    fi
 else
-    echo -e "${RED}✗${NC} Cannot reach Ollama from container"
+    echo -e "${RED}✗${NC} Victor API container not found"
 fi
 
 echo
