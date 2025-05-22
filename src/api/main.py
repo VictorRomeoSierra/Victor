@@ -1,11 +1,36 @@
-from fastapi import FastAPI, Body, HTTPException
+"""
+Victor API - Main FastAPI application
+Integrates DCS Lua code analysis directly without external service calls
+"""
+
+from fastapi import FastAPI, Body, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 import os
-import httpx
-import asyncio
+import sys
+import logging
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import embedding app services
+from embedding.app.services.retrieval_service import RetrievalService
+from embedding.app.services.embedding_service import EmbeddingService
+
+# Import database session
+from api.db import get_db
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Victor API", description="API for Victor DCS Lua coding assistant")
+
+# Initialize services
+embedding_service = EmbeddingService()
+retrieval_service = RetrievalService(embedding_service)
 
 class EnhancePromptRequest(BaseModel):
     prompt: str
@@ -19,6 +44,16 @@ class ReindexRequest(BaseModel):
     recursive: bool = True
     file_pattern: str = "*.lua"
 
+class SearchRequest(BaseModel):
+    query: str
+    limit: int = 5
+    search_type: str = "hybrid"  # "text", "vector", or "hybrid"
+
+class ContextRequest(BaseModel):
+    query: str
+    limit: int = 5
+    detailed: bool = True
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to Victor API", "status": "operational"}
@@ -28,104 +63,190 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/enhance_prompt", response_model=EnhancePromptResponse)
-async def enhance_prompt(request: EnhancePromptRequest):
+async def enhance_prompt(
+    request: EnhancePromptRequest,
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Enhance a prompt with context for LiteLLM.
+    Enhance a prompt with context from the DCS Lua codebase.
     """
     query = request.prompt
     model = request.model
     
-    # TODO: Implement actual context retrieval
-    # This is a placeholder implementation
-    
     # Check if query is DCS-related
     if is_dcs_related(query):
-        # Get relevant code snippets (placeholder)
-        snippets = [{"content": "-- Example DCS code snippet", "path": "example.lua"}]
-        
-        # Format context based on model
-        context = format_context_for_model(snippets, model)
-        
-        # Enhance the prompt
-        enhanced_prompt = f"""You are an expert in DCS World Lua programming.
-        Use the following code snippets to help answer the question.
-        
-        {context}
-        
-        Question: {query}
-        """
-        
-        return {"enhanced_prompt": enhanced_prompt}
+        try:
+            # Search for relevant code snippets
+            chunks = await retrieval_service.hybrid_search(db, query, limit=5)
+            
+            if chunks:
+                # Format context for LLM
+                context = retrieval_service.format_context_for_llm(chunks)
+                
+                # Enhance the prompt with real context
+                enhanced_prompt = f"""You are an expert in DCS World Lua programming assistant.
+Use the following relevant code snippets from the XSAF codebase to help answer the question.
+
+{context}
+
+Question: {query}
+
+Instructions:
+- Reference specific functions, variables, or patterns from the provided code snippets when relevant
+- Explain how the code works and provide examples based on the XSAF patterns shown
+- If the code snippets don't contain relevant information, acknowledge this and provide general DCS Lua guidance
+"""
+                return {"enhanced_prompt": enhanced_prompt}
+            else:
+                # No relevant snippets found, but still enhance for DCS context
+                enhanced_prompt = f"""You are an expert in DCS World Lua programming assistant.
+
+Question: {query}
+
+Instructions:
+- Provide detailed guidance for DCS World Lua scripting
+- Include practical examples and best practices
+- Focus on DCS-specific APIs and patterns
+"""
+                return {"enhanced_prompt": enhanced_prompt}
+                
+        except Exception as e:
+            logger.error(f"Error in enhance_prompt: {e}")
+            # Fall through to return original prompt
     
-    # Return original prompt if not DCS-related
+    # Return original prompt if not DCS-related or if enhancement fails
     return {"enhanced_prompt": query}
 
-@app.post("/reindex")
-async def reindex_codebase(request: ReindexRequest):
+@app.post("/search")
+async def search_code(
+    request: SearchRequest,
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Trigger re-indexing of the codebase with updated exclusions.
+    Search for code snippets in the DCS Lua codebase.
     """
     try:
-        # Call the embedding service to reindex
-        embedding_service_url = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:8001")
+        if request.search_type == "text":
+            results = await retrieval_service.text_search(db, request.query, request.limit)
+        elif request.search_type == "vector":
+            results = await retrieval_service.vector_search(db, request.query, request.limit)
+        else:  # hybrid
+            results = await retrieval_service.hybrid_search(db, request.query, request.limit)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{embedding_service_url}/index/directory",
-                params={
-                    "directory_path": request.directory_path,
-                    "recursive": request.recursive,
-                    "file_pattern": request.file_pattern
-                }
-            )
-            
-            if response.status_code == 202:
-                return {
-                    "status": "success", 
-                    "message": f"Reindexing of {request.directory_path} started with exclusions: XSAF.DB/, Moose/, Mist.lua"
-                }
-            else:
-                raise HTTPException(status_code=500, detail=f"Failed to start reindexing: {response.text}")
-                
+        return {
+            "results": results,
+            "count": len(results),
+            "search_type": request.search_type
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error starting reindex: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error searching: {str(e)}")
 
-@app.get("/index/stats")
-async def get_index_stats():
+@app.post("/context")
+async def get_context(
+    request: ContextRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get formatted context for a query, suitable for RAG.
+    """
+    try:
+        # Search for relevant chunks
+        chunks = await retrieval_service.hybrid_search(db, request.query, request.limit)
+        
+        if request.detailed:
+            # Return detailed information
+            return {
+                "context": retrieval_service.format_context_for_llm(chunks),
+                "snippet_count": len(chunks),
+                "results": chunks
+            }
+        else:
+            # Return just the formatted context
+            return {
+                "context": retrieval_service.format_context_for_llm(chunks),
+                "snippet_count": len(chunks)
+            }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting context: {str(e)}")
+
+@app.get("/stats")
+async def get_index_stats(db: AsyncSession = Depends(get_db)):
     """
     Get statistics about the current index.
     """
     try:
-        embedding_service_url = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:8001")
+        # Count total chunks
+        total_result = await db.execute(text("SELECT COUNT(*) FROM lua_chunks"))
+        total_chunks = total_result.scalar()
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{embedding_service_url}/stats")
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                raise HTTPException(status_code=500, detail=f"Failed to get stats: {response.text}")
-                
+        # Count chunks by type
+        type_result = await db.execute(
+            text("""
+                SELECT chunk_type, COUNT(*) as count 
+                FROM lua_chunks 
+                GROUP BY chunk_type 
+                ORDER BY count DESC
+            """)
+        )
+        chunks_by_type = {row.chunk_type: row.count for row in type_result}
+        
+        # Count unique files
+        file_result = await db.execute(
+            text("SELECT COUNT(DISTINCT file_path) FROM lua_chunks")
+        )
+        unique_files = file_result.scalar()
+        
+        # Count chunks with embeddings
+        embedding_result = await db.execute(
+            text("SELECT COUNT(*) FROM lua_chunks WHERE embedding IS NOT NULL")
+        )
+        chunks_with_embeddings = embedding_result.scalar()
+        
+        return {
+            "total_chunks": total_chunks,
+            "unique_files": unique_files,
+            "chunks_with_embeddings": chunks_with_embeddings,
+            "chunks_by_type": chunks_by_type,
+            "embedding_provider": embedding_service.get_provider_info()
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting stats: {str(e)}")
+
+@app.post("/reindex")
+async def reindex_codebase(request: ReindexRequest):
+    """
+    Trigger re-indexing of the codebase.
+    Note: This endpoint returns instructions for manual reindexing.
+    In the future, this could trigger an async job.
+    """
+    return {
+        "status": "info",
+        "message": "To reindex the codebase, use the indexing service",
+        "instructions": [
+            "1. Use the embedding service's /index/directory endpoint",
+            "2. Or run the indexing script directly",
+            f"3. Directory: {request.directory_path}",
+            f"4. Recursive: {request.recursive}",
+            f"5. Pattern: {request.file_pattern}"
+        ],
+        "note": "The indexing will automatically exclude XSAF.DB/, Moose/, and Mist.lua files"
+    }
 
 def is_dcs_related(query: str) -> bool:
     """
     Check if a query is related to DCS World.
     """
-    dcs_keywords = ["dcs", "lua", "mission", "script", "trigger", "event", "xsaf"]
-    return any(keyword in query.lower() for keyword in dcs_keywords)
+    dcs_keywords = [
+        "dcs", "lua", "mission", "script", "trigger", "event", "xsaf",
+        "waypoint", "aircraft", "helicopter", "unit", "group", "coalition",
+        "task", "zone", "airbase", "missioncommands", "timer", "scheduler"
+    ]
+    query_lower = query.lower()
+    return any(keyword in query_lower for keyword in dcs_keywords)
 
-def format_context_for_model(snippets: List[Dict[str, Any]], model: str) -> str:
-    """
-    Format code snippets as context based on the model.
-    """
-    formatted_snippets = []
-    
-    for snippet in snippets:
-        formatted_snippets.append(f"File: {snippet['path']}\n```lua\n{snippet['content']}\n```\n")
-    
-    return "\n".join(formatted_snippets)
 
 if __name__ == "__main__":
     import uvicorn

@@ -9,13 +9,20 @@ httpx==0.25.1
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 pgvector==0.2.3
+asyncpg>=0.28.0
 
 # Essential packages for code parsing
 tree-sitter>=0.20.1
+tree-sitter-languages>=1.7.0
 
 # Utilities
 requests==2.31.0
 tenacity==8.2.3
+tqdm>=4.65.0
+
+# AI/ML providers
+openai>=1.0.0
+aiohttp>=3.8.0
 
 # Testing and development
 pytest>=7.3.1

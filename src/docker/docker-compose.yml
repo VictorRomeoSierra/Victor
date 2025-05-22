@@ -9,13 +9,16 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@host.docker.internal:5433/vectordb
       - POSTGRES_HOST=host.docker.internal
       - POSTGRES_PORT=5433
       - POSTGRES_DB=vectordb
-      - POSTGRES_USER=dcs_user
-      - POSTGRES_PASSWORD=secure_password
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-ollama}
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - LITELLM_BASE_URL=http://host.docker.internal:4000
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      - SEARCH_LIMIT=${SEARCH_LIMIT:-10}
     volumes:
       - ../:/app/src
     restart: unless-stopped
@@ -34,8 +37,8 @@ services:
       - DB_POSTGRESDB_HOST=host.docker.internal
       - DB_POSTGRESDB_PORT=5433
       - DB_POSTGRESDB_DATABASE=vectordb
-      - DB_POSTGRESDB_USER=dcs_user
-      - DB_POSTGRESDB_PASSWORD=secure_password
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=postgres
       - N8N_HOST=${N8N_HOST:-n8n.victorromeosierra.com}
       - N8N_PORT=5678
       - NODE_ENV=production

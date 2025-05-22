@@ -173,6 +173,19 @@ if os.getenv("ANTHROPIC_API_KEY"):
         }
     })
 
+# Test configuration with provided API key
+VICTOR_MODELS.append({
+    "model_name": "claude-test",
+    "litellm_params": {
+        "model": "claude-3-sonnet-20240229", 
+        "api_key": "sk-GvsVf6xdqB0eSMtPxitTsQ"
+    },
+    "model_info": {
+        "description": "Claude Sonnet test configuration",
+        "mode": "chat"
+    }
+})
+
 def configure_litellm():
     """
     Configure LiteLLM with Victor settings.
