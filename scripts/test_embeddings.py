@@ -3,9 +3,19 @@
 Test script to verify embedding generation is working
 """
 
-import requests
-import json
 import sys
+
+try:
+    import requests
+except ImportError:
+    print("Error: 'requests' module not found")
+    print("\nTo run this script, either:")
+    print("1. Install requests: pip3 install requests")
+    print("2. Use the wrapper script: ./scripts/test_embeddings.sh")
+    print("   (This runs the test inside the Docker container)")
+    sys.exit(1)
+
+import json
 
 API_URL = "http://localhost:8000"
 if len(sys.argv) > 1:
