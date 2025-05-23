@@ -1,0 +1,300 @@
+{
+  "name": "Victor Chat RAG Enhancement - Local Ollama",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "victor-local-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2f4ffadc-4b70-436e-880e-9891559ae1fc",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        100
+      ],
+      "webhookId": "victor-local-chat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "dcs"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "lua"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "waypoint"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "xsaf"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "mission"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "aircraft"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "helicopter"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "trigger"
+            },
+            {
+              "value1": "={{$json.body.messages[0].content.toLowerCase()}}",
+              "operation": "contains",
+              "value2": "script"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "79b54e72-1c23-47ea-9a8a-c8f7f25748b9",
+      "name": "Is DCS Query?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.0.0.130:8000/context",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"query\": $json.body.messages[0].content,\n  \"limit\": 5,\n  \"detailed\": false\n} }}",
+        "options": {}
+      },
+      "id": "5044474a-a0b6-4840-95e1-b0b17c14cf68",
+      "name": "Enhance with Victor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.0.0.130:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": $json.body.model || 'codellama:latest',\n  \"messages\": $json.body.messages,\n  \"stream\": $json.body.stream || false,\n  \"options\": {\n    \"temperature\": 0.7\n  }\n} }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "3a56d013-b592-42f8-a153-ca09d709ba89",
+      "name": "Ollama Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the context from Victor API\nconst victorResponse = $input.first().json;\nconst originalRequest = $node['Webhook'].json.body;\n\n// Build enhanced messages array\nconst enhancedMessages = [...originalRequest.messages];\n\n// If Victor provided context with code snippets, prepend it as a system message\nif (victorResponse.context && victorResponse.snippet_count > 0) {\n  const systemPrompt = `You are an expert in DCS World Lua programming assistant.\nUse the following relevant code snippets from the XSAF codebase to help answer the question.\n\n${victorResponse.context}\n\nInstructions:\n- Reference specific functions, variables, or patterns from the provided code snippets when relevant\n- Explain how the code works and provide examples based on the XSAF patterns shown\n- If the code snippets don't contain relevant information, acknowledge this and provide general DCS Lua guidance`;\n  \n  enhancedMessages.unshift({\n    role: 'system',\n    content: systemPrompt\n  });\n}\n\n// Select the best model for DCS queries\nlet model = originalRequest.model;\nif (model === 'claude-3-7-sonnet-latest' || !model) {\n  // Map to best available Ollama coding model\n  model = 'codellama:latest';\n}\n\nreturn [{\n  json: {\n    model: model,\n    messages: enhancedMessages,\n    stream: originalRequest.stream || false,\n    options: {\n      temperature: 0.7\n    }\n  }\n}];"
+      },
+      "id": "de2e62ba-bdc0-49dc-a79b-a2d294a3e38c",
+      "name": "Prepare Enhanced Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.0.0.130:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "e7b56f33-b9e6-4d60-a821-ee9910ecf7cd",
+      "name": "Ollama with Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8f043c4d-990b-45aa-a5b9-680639a2b786",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the Ollama response\nconst ollamaResponse = $input.first().json;\n\n// Extract the message content properly\nlet messageContent = 'No response generated';\nif (ollamaResponse.message && ollamaResponse.message.content) {\n  messageContent = ollamaResponse.message.content;\n} else if (ollamaResponse.response) {\n  messageContent = ollamaResponse.response;\n}\n\n// Standard Open-WebUI response format\nreturn [{\n  json: {\n    id: 'chatcmpl-' + Date.now(),\n    object: 'chat.completion',\n    created: Math.floor(Date.now() / 1000),\n    model: ollamaResponse.model || 'codellama:latest',\n    choices: [{\n      index: 0,\n      message: {\n        role: 'assistant',\n        content: messageContent\n      },\n      finish_reason: 'stop'\n    }],\n    usage: {\n      prompt_tokens: ollamaResponse.prompt_eval_count || 0,\n      completion_tokens: ollamaResponse.eval_count || 0,\n      total_tokens: (ollamaResponse.prompt_eval_count || 0) + (ollamaResponse.eval_count || 0)\n    }\n  }\n}];"
+      },
+      "id": "e82f395f-d3ca-459c-810a-48e2b03578c3",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8b872df6-2b6d-4d93-9c56-a336308b96dc",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        800,
+        100
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is DCS Query?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is DCS Query?": {
+      "main": [
+        [
+          {
+            "node": "Enhance with Victor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ollama Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhance with Victor": {
+      "main": [
+        [
+          {
+            "node": "Prepare Enhanced Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Enhanced Request": {
+      "main": [
+        [
+          {
+            "node": "Ollama with Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama with Context": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Responses": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3ff9e70a-b86c-4738-b88c-c2896a0da860",
+  "meta": {
+    "instanceId": "6ae5d679168504e8a108dd7865baf81abf5c060ee30ad01499ac127ef4e48f5c"
+  },
+  "id": "tkCSAljxJYzPRVT8",
+  "tags": []
+}
