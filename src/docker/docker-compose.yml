@@ -37,8 +37,8 @@ services:
       - DB_POSTGRESDB_HOST=host.docker.internal
       - DB_POSTGRESDB_PORT=5433
       - DB_POSTGRESDB_DATABASE=vectordb
-      - DB_POSTGRESDB_USER=postgres
-      - DB_POSTGRESDB_PASSWORD=postgres
+      - DB_POSTGRESDB_USER=dcs_user
+      - DB_POSTGRESDB_PASSWORD=secure_password
       - N8N_HOST=${N8N_HOST:-n8n.victorromeosierra.com}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
