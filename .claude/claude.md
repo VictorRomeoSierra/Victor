@@ -300,10 +300,36 @@ docker-compose -f docker-compose.simple.yml logs -f victor-api
 - ⚠️ N8N → Ollama integration needs JSON body format fixes
 
 ### **Next Steps**
-1. **Fix N8N Ollama JSON formatting**: 
-   - Try using Code node to build request
-   - Or use Function node with proper JSON construction
-   - Consider using HTTP Request node in "Form Data" mode
-2. **Complete end-to-end testing** once JSON issue resolved
+1. **Debug N8N workflow execution**: 
+   - Import updated workflow JSON with fixed num_predict parameter
+   - Check N8N logs for workflow errors
+   - Verify Victor API and Ollama connectivity from N8N
+2. **Complete end-to-end testing** once workflow is working
 3. **Configure Open-WebUI** to use N8N webhook endpoint
 4. **Document the complete working pipeline**
+
+## Latest Session Progress (Session 6) - May 23, 2025
+
+### **N8N Ollama Integration Fix**
+- [x] **JSON Format Issue Fixed**: Removed unsupported `num_predict` parameter from Ollama chat API calls
+- [x] **Updated workflow files**: Fixed in both "Ollama Chat" node and "Prepare Enhanced Request" function
+- [x] **Test script created**: `test_n8n_ollama_workflow.py` for comprehensive testing
+- [x] **Webhook URL confirmed**: Production URL is `https://n8n.victorromeosierra.com/webhook/victor-local-chat`
+
+### **Workflow Fixed and Working!**
+- [x] **Root Cause Found**: N8N webhook data comes wrapped in `body` object
+- [x] **Fixed References**: Changed `$json.messages` to `$json.body.messages` throughout workflow
+- [x] **Response Extraction**: Fixed to properly extract `message.content` from Ollama response
+- [x] **Working Integration**: Both DCS and non-DCS queries now working correctly
+
+### **Test Results**
+- ✅ Simple queries working: "What is 2+2?" returns correct response
+- ✅ DCS queries routed correctly: "How do I create waypoints in DCS?" gets enhanced context
+- ✅ Response format compatible with Open-WebUI
+- ✅ Production webhook URL: `https://n8n.victorromeosierra.com/webhook/victor-local-chat`
+
+### **Key Fixes Applied**
+1. Changed all `$json.messages[0]` to `$json.body.messages[0]` in conditions
+2. Updated HTTP request bodies to use `$json.body.model` and `$json.body.messages`
+3. Fixed webhook data extraction in code nodes
+4. Properly formatted response for Open-WebUI compatibility

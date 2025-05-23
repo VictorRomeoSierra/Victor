@@ -1,0 +1,64 @@
+{
+  "name": "Victor Ollama Diagnostic",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "victor-diagnostic",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log incoming webhook data\nconst webhookData = $input.first().json;\nconsole.log('Webhook received:', JSON.stringify(webhookData, null, 2));\n\n// Extract the actual request body\nconst body = webhookData.body || webhookData;\nconsole.log('Body extracted:', JSON.stringify(body, null, 2));\n\n// Build Ollama request\nconst ollamaRequest = {\n  model: body.model || 'codellama:latest',\n  messages: body.messages || [{role: 'user', content: 'Hello'}],\n  stream: false,\n  options: {\n    temperature: 0.7\n  }\n};\n\nconsole.log('Ollama request built:', JSON.stringify(ollamaRequest, null, 2));\n\nreturn [{\n  json: {\n    webhook_data: webhookData,\n    body_extracted: body,\n    ollama_request: ollamaRequest,\n    has_messages: !!body.messages,\n    messages_count: body.messages ? body.messages.length : 0\n  }\n}];"
+      },
+      "id": "diagnose",
+      "name": "Diagnose Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Diagnose Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diagnose Input": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

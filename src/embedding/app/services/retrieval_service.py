@@ -126,8 +126,13 @@ class RetrievalService:
             # Convert to list for SQL
             embedding_list = query_embedding.tolist()
             
+            # Format embedding as PostgreSQL array string for vector type
+            # This is necessary because asyncpg doesn't handle vector type casting well
+            embedding_str = '[' + ','.join(str(x) for x in embedding_list) + ']'
+            
             # SQL query for vector similarity search
-            sql = text("""
+            # Using string interpolation for the vector literal (safe since it's our generated data)
+            sql = f"""
                 SELECT 
                     id,
                     file_path,
@@ -136,16 +141,16 @@ class RetrievalService:
                     meta_data,
                     line_start,
                     line_end,
-                    1 - (embedding <=> :embedding::vector) as similarity
+                    1 - (embedding <=> '{embedding_str}'::vector) as similarity
                 FROM lua_chunks
                 WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> :embedding::vector
+                ORDER BY embedding <=> '{embedding_str}'::vector
                 LIMIT :limit
-            """)
+            """
             
             result = await db.execute(
-                sql,
-                {"embedding": embedding_list, "limit": limit}
+                text(sql),
+                {"limit": limit}
             )
             
             chunks = []

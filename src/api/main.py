@@ -27,6 +27,8 @@ try:
     # Import embedding app services
     from embedding.app.services.retrieval_service import RetrievalService
     from embedding.app.services.embedding_service import EmbeddingService
+    # Import debug endpoint
+    from api.debug_endpoint import router as debug_router
     
     # Import database session
     from api.db import get_db
@@ -35,6 +37,12 @@ except ImportError as e:
     raise
 
 app = FastAPI(title="Victor API", description="API for Victor DCS Lua coding assistant")
+
+# Add debug router if available
+try:
+    app.include_router(debug_router, prefix="/api", tags=["debug"])
+except NameError:
+    logger.warning("Debug router not available")
 
 # Initialize services
 embedding_service = EmbeddingService()

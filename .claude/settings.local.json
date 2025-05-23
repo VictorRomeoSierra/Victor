@@ -6,7 +6,11 @@
       "Bash(gh:*)",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(chmod:*)",
+      "Bash(source:*)",
+      "Bash(python scripts/test_n8n_ollama_workflow.py:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

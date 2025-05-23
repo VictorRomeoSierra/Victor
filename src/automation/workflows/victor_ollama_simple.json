@@ -1,0 +1,92 @@
+{
+  "name": "Victor Ollama Simple Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "victor-simple",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.0.0.130:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: $json.model || 'codellama:latest',\n  messages: $json.messages || [{role: 'user', content: 'Hello'}],\n  stream: false,\n  options: {\n    temperature: 0.7\n  }\n}) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "ollama-direct",
+      "name": "Call Ollama Directly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the Ollama response\nconst ollamaResponse = $input.first().json;\n\n// Log for debugging\nconsole.log('Received from Ollama:', JSON.stringify(ollamaResponse, null, 2));\n\n// Extract the message content\nlet messageContent = 'No response generated';\nif (ollamaResponse.message && ollamaResponse.message.content) {\n  messageContent = ollamaResponse.message.content;\n}\n\n// Standard Open-WebUI response format\nreturn [{\n  json: {\n    id: 'chatcmpl-' + Date.now(),\n    object: 'chat.completion',\n    created: Math.floor(Date.now() / 1000),\n    model: ollamaResponse.model || 'codellama:latest',\n    choices: [{\n      index: 0,\n      message: {\n        role: 'assistant',\n        content: messageContent\n      },\n      finish_reason: 'stop'\n    }],\n    usage: {\n      prompt_tokens: ollamaResponse.prompt_eval_count || 0,\n      completion_tokens: ollamaResponse.eval_count || 0,\n      total_tokens: (ollamaResponse.prompt_eval_count || 0) + (ollamaResponse.eval_count || 0)\n    }\n  }\n}];"
+      },
+      "id": "format",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Ollama Directly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ollama Directly": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

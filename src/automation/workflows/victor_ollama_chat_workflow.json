@@ -107,7 +107,7 @@
         "url": "http://10.0.0.130:11434/api/chat",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"model\": $json.model || 'codellama:latest',\n  \"messages\": $json.messages,\n  \"stream\": $json.stream || false,\n  \"options\": {\n    \"temperature\": 0.7,\n    \"num_predict\": 2048\n  }\n} }}",
+        "jsonBody": "={{ {\n  \"model\": $json.model || 'codellama:latest',\n  \"messages\": $json.messages,\n  \"stream\": $json.stream || false,\n  \"options\": {\n    \"temperature\": 0.7\n  }\n} }}",
         "options": {
           "timeout": 60000
         }
@@ -120,7 +120,7 @@
     },
     {
       "parameters": {
-        "functionCode": "// Get the enhanced prompt from Victor\nconst victorResponse = $node['Enhance with Victor'].json;\nconst originalRequest = $node['Webhook'].json;\n\n// Build enhanced messages array\nconst enhancedMessages = [...originalRequest.messages];\n\n// If Victor provided context, prepend it as a system message\nif (victorResponse.enhanced_prompt && victorResponse.enhanced_prompt !== originalRequest.messages[0].content) {\n  enhancedMessages.unshift({\n    role: 'system',\n    content: victorResponse.enhanced_prompt\n  });\n}\n\n// Select the best model for DCS queries\nlet model = originalRequest.model;\nif (model === 'claude-3-7-sonnet-latest' || !model) {\n  // Map to best available Ollama coding model\n  model = 'codellama:latest';\n}\n\nreturn {\n  json: {\n    model: model,\n    messages: enhancedMessages,\n    stream: originalRequest.stream || false,\n    temperature: 0.7,\n    options: {\n      num_predict: 2048\n    }\n  }\n};"
+        "functionCode": "// Get the enhanced prompt from Victor\nconst victorResponse = $node['Enhance with Victor'].json;\nconst originalRequest = $node['Webhook'].json;\n\n// Build enhanced messages array\nconst enhancedMessages = [...originalRequest.messages];\n\n// If Victor provided context, prepend it as a system message\nif (victorResponse.enhanced_prompt && victorResponse.enhanced_prompt !== originalRequest.messages[0].content) {\n  enhancedMessages.unshift({\n    role: 'system',\n    content: victorResponse.enhanced_prompt\n  });\n}\n\n// Select the best model for DCS queries\nlet model = originalRequest.model;\nif (model === 'claude-3-7-sonnet-latest' || !model) {\n  // Map to best available Ollama coding model\n  model = 'codellama:latest';\n}\n\nreturn {\n  json: {\n    model: model,\n    messages: enhancedMessages,\n    stream: originalRequest.stream || false,\n    options: {\n      temperature: 0.7\n    }\n  }\n};"
       },
       "id": "prepare-enhanced",
       "name": "Prepare Enhanced Request",
