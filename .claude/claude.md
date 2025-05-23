@@ -352,6 +352,71 @@ docker-compose -f docker-compose.simple.yml logs -f victor-api
 - ✅ Production webhook: `https://n8n.victorromeosierra.com/webhook/victor-local-chat`
 
 ### **Open-WebUI Integration** 
-- ⚠️ Requires custom function creation (not simple API configuration)
-- Need access to Open-WebUI documentation to understand function format
-- Function should route requests through N8N webhook endpoint
+- ✅ Custom pipe functions created for all Ollama models
+- ✅ Functions successfully deployed and tested
+- ✅ Support for 9 different models with Victor enhancement
+
+## Latest Session Progress (Session 8) - May 23, 2025
+
+### **Open-WebUI Function Integration**
+- [x] **Discovered correct format**: Open-WebUI expects `Pipe` class, not `Pipeline`
+- [x] **Created working pipe functions**: Successfully integrated with N8N webhook
+- [x] **Fixed model routing**: Resolved "model not found" error by hardcoding Ollama model names
+- [x] **Extended timeout**: Increased to 120 seconds for complex queries
+- [x] **Created 9 model-specific functions**:
+  - Coding models: CodeLlama, Qwen2.5 Coder, Codestral, DeepSeek Coder v2, CodeGemma
+  - General models: Llama 3.2, Mistral, DeepSeek R1, Gemma 2
+
+### **Repository Cleanup**
+- [x] **Removed test files**: Cleaned up 12 test scripts
+- [x] **Organized documentation**: Moved DEPLOYMENT*.md files to docs/deployment/
+- [x] **Removed debug files**: Cleared debug scripts and endpoints
+- [x] **Updated TODO list**: Created new todo.md with current status
+
+### **Current Working System**
+- ✅ Complete end-to-end RAG pipeline operational
+- ✅ Open-WebUI shows "Victor DCS - [Model]" options for all models
+- ✅ DCS queries automatically enhanced with XSAF code context
+- ✅ Non-DCS queries routed directly to Ollama
+- ✅ Production ready with 37k+ indexed code chunks
+
+### **Next Priority: GitHub Webhook Integration**
+- Set up automatic reindexing when XSAF repository updates
+- Create N8N workflow for webhook handling
+- Implement notification system for indexing status
+
+## Latest Session Progress (Session 9) - May 23, 2025
+
+### **Claude N8N Integration Complete**
+- [x] **Created Claude Open-WebUI function**: `victor_dcs_claude.py` for Claude 3.7 Sonnet
+- [x] **Fixed N8N workflow issues**: Updated to handle Open-WebUI message format
+- [x] **Resolved JSON parsing errors**: Fixed message array handling in workflow
+- [x] **Tested end-to-end**: Both DCS and non-DCS queries working through Claude
+
+### **Complete Model Coverage**
+- ✅ 9 Ollama model functions (CodeLlama, Qwen2.5, Llama 3.2, etc.)
+- ✅ 1 Claude function via N8N/LiteLLM
+- ✅ All models support DCS context enhancement
+- ✅ Consistent naming: "Victor DCS - [Model Name]"
+
+### **System Status**
+- ✅ Victor API: Running with 37k+ indexed XSAF chunks
+- ✅ N8N Workflows: Both Ollama and Claude pipelines operational
+- ✅ Open-WebUI: All functions deployed and tested
+- ✅ Production URLs:
+  - Ollama: `https://n8n.victorromeosierra.com/webhook/victor-local-chat`
+  - Claude: `https://n8n.victorromeosierra.com/webhook/victor-chat`
+
+### **Documentation Updates**
+- [x] Created comprehensive TODO list (`todo.md`)
+- [x] Updated function documentation
+- [x] Added streaming implementation guide
+- [x] Cleaned up test scripts
+
+### **Ready for Production**
+The Victor DCS Assistant is now fully operational with:
+- Multiple model support (local and cloud)
+- RAG-enhanced responses for DCS queries
+- Robust error handling
+- Configurable timeouts
+- Debug capabilities
