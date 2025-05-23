@@ -300,13 +300,11 @@ docker-compose -f docker-compose.simple.yml logs -f victor-api
 - ⚠️ N8N → Ollama integration needs JSON body format fixes
 
 ### **Next Steps**
-1. **Debug N8N workflow execution**: 
-   - Import updated workflow JSON with fixed num_predict parameter
-   - Check N8N logs for workflow errors
-   - Verify Victor API and Ollama connectivity from N8N
-2. **Complete end-to-end testing** once workflow is working
-3. **Configure Open-WebUI** to use N8N webhook endpoint
-4. **Document the complete working pipeline**
+1. **Create Open-WebUI function**: 
+   - Need to access ~/Dev/open-webui docs to understand function format
+   - Create custom function to route requests through N8N webhook
+   - Configure function to use https://n8n.victorromeosierra.com/webhook/victor-local-chat
+2. **Document the complete working pipeline**
 
 ## Latest Session Progress (Session 6) - May 23, 2025
 
@@ -333,3 +331,27 @@ docker-compose -f docker-compose.simple.yml logs -f victor-api
 2. Updated HTTP request bodies to use `$json.body.model` and `$json.body.messages`
 3. Fixed webhook data extraction in code nodes
 4. Properly formatted response for Open-WebUI compatibility
+
+## Latest Session Progress (Session 7) - May 23, 2025
+
+### **Vector Search SQL Fix**
+- [x] **Fixed asyncpg syntax error**: Changed from `:embedding::vector` to string interpolation
+- [x] **Working vector search**: Now returns relevant XSAF code snippets with similarity scores
+- [x] **RAG pipeline complete**: Victor API successfully retrieves and formats code context
+
+### **N8N Workflow Enhancement**  
+- [x] **Updated to use /context endpoint**: Changed from `/enhance_prompt` to `/context`
+- [x] **Request format updated**: Now sends `{query, limit, detailed}` instead of `{prompt, model}`
+- [x] **Response handling fixed**: Properly extracts `context` and `snippet_count` fields
+- [x] **System prompt improved**: Includes actual code snippets with instructions for usage
+
+### **Current Status**
+- ✅ Complete RAG pipeline working end-to-end
+- ✅ N8N webhook returns Ollama responses with XSAF code context for DCS queries
+- ✅ Non-DCS queries go directly to Ollama without context
+- ✅ Production webhook: `https://n8n.victorromeosierra.com/webhook/victor-local-chat`
+
+### **Open-WebUI Integration** 
+- ⚠️ Requires custom function creation (not simple API configuration)
+- Need access to Open-WebUI documentation to understand function format
+- Function should route requests through N8N webhook endpoint
