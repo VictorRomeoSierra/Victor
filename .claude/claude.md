@@ -208,3 +208,60 @@ Open-WebUI → N8N Workflow → Victor API → Embedding Service → PostgreSQL
    - Add connection pooling configuration
    - Implement caching for frequent queries
    - Monitor memory usage with tree-sitter
+
+## Latest Session Progress (Session 4)
+
+### **Deployment and Testing**
+- [x] **Fixed PyTorch dependency issue**: Made torch import optional, created simplified Docker deployment
+- [x] **Created deployment scripts**:
+  - `deploy_simple.sh` - Uses lightweight Docker image without ML packages
+  - `test_deployment.sh` - Comprehensive API testing
+  - `test_embeddings.sh` - Embedding-specific tests (runs in container)
+- [x] **Fixed PostgreSQL credentials**: Changed from postgres/postgres to dcs_user/secure_password
+- [x] **Resolved build issues**: Fixed requirements.txt copying in Docker build
+
+### **Database Connection**
+- Database: PostgreSQL on port 5433
+- User: `dcs_user`
+- Password: `secure_password`
+- Database name: `vectordb`
+- Connection string: `postgresql+asyncpg://dcs_user:secure_password@host.docker.internal:5433/vectordb`
+
+### **Current Status**
+- ✅ Victor API deployed using simplified Docker setup
+- ✅ Database connection working
+- ✅ Health check passing
+- ✅ Stats endpoint working
+- ✅ Search endpoints functional
+- ✅ Ollama connectivity verified (may need `OLLAMA_HOST=0.0.0.0:11434`)
+
+### **System Prompts**
+Victor API uses two prompts:
+1. **With code context**: Instructs to use XSAF code snippets to answer
+2. **Without context**: Provides general DCS Lua guidance
+
+### **Testing Commands**
+```bash
+# Deploy
+cd ~/Dev/Victor
+./scripts/deploy_simple.sh
+
+# Test deployment
+./scripts/test_deployment.sh
+
+# Test embeddings (runs in container)
+./scripts/test_embeddings.sh
+
+# Debug Ollama connectivity
+./scripts/debug_ollama_connection.sh
+
+# View logs
+cd src/docker
+docker-compose -f docker-compose.simple.yml logs -f victor-api
+```
+
+### **Next Session TODO**
+1. Verify vector search returns results (may need to regenerate embeddings)
+2. Test N8N workflow integration
+3. Consider adding endpoint to regenerate embeddings
+4. Fine-tune system prompts if needed
