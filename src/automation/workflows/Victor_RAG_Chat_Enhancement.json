@@ -1,0 +1,306 @@
+{
+  "name": "Victor RAG Chat Enhancement",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/enhance_prompt",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"prompt\": \"{{ $json.prompt }}\",\n    \"model\": \"codellama\"\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        -260
+      ],
+      "id": "f140151b-69b5-4817-9f4e-90225acc1981",
+      "name": "Victor API Call"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "victor-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -760,
+        -140
+      ],
+      "id": "543b38b0-0bcf-47bb-9253-29209a38963b",
+      "name": "Incoming Request",
+      "webhookId": "7a2fcbe6-2201-40d7-8051-c189667389df"
+    },
+    {
+      "parameters": {
+        "jsCode": "  // Extract the prompt from webhook data\n  const prompt = $input.first().json.body.prompt || $input.first().json.prompt || '';\n  const model = $input.first().json.body.model || 'auto';\n\n  // DCS detection keywords\n  const dcsKeywords = ['dcs', 'lua', 'mission', 'script', 'trigger', 'xsaf', 'waypoint', 'aircraft', 'helicopter', 'miz', 'coalitions'];\n\n  // Check if query is DCS-related\n  const isDCS = dcsKeywords.some(keyword =>\n    prompt.toLowerCase().includes(keyword)\n  );\n\n  return [{\n    json: {\n      prompt: prompt,\n      model: model,\n      isDCS: isDCS,\n      originalData: $input.first().json\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        -140
+      ],
+      "id": "e92fae01-8f4e-4846-b1fe-c83a0d919da9",
+      "name": "Check for DCS keywords in Query"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.isDCS }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "9952bb86-9975-48d3-9132-9acd0f159768"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -320,
+        -140
+      ],
+      "id": "591736e0-4b65-4e30-bf44-183268696839",
+      "name": "Decide whether to Augment"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:4000/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-GvsVf6xdqB0eSMtPxitTsQ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"model\": \"claude-3-7-sonnet-latest\",\n        \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": {{ JSON.stringify($json.enhanced_prompt) }}\n      }\n    ],\n    \"max_tokens\": 1000\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        -260
+      ],
+      "id": "b6f994aa-66df-41b4-8683-74390de14348",
+      "name": "Call Claude through LiteLLM"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:4000/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-GvsVf6xdqB0eSMtPxitTsQ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"model\": \"claude-3-7-sonnet-latest\",\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": \"{{ $json.prompt }}\"\n      }\n    ],\n    \"max_tokens\": 1000\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        40,
+        -60
+      ],
+      "id": "472c0e10-caff-430d-a6bc-041ae9fec240",
+      "name": "Call General Model"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        420,
+        -160
+      ],
+      "id": "5b30aaa6-4a24-4713-a1d2-4f333eea88f0",
+      "name": "Combine Responses"
+    },
+    {
+      "parameters": {
+        "jsCode": "  const response = $input.first().json;\n  const content = response.choices?.[0]?.message?.content || response.content || 'No response generated';\n\n  return [{\n    json: {\n      response: content,\n      model_used: response.model || 'unknown',\n      enhanced: $input.first().json.enhanced_prompt ? true : false\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        -160
+      ],
+      "id": "6be11624-ce96-4351-8a8b-b8544cd73b0a",
+      "name": "Format Response"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        -160
+      ],
+      "id": "3c4d1e61-9282-47a2-971a-af9be13d94db",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Incoming Request": {
+      "main": [
+        [
+          {
+            "node": "Check for DCS keywords in Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for DCS keywords in Query": {
+      "main": [
+        [
+          {
+            "node": "Decide whether to Augment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide whether to Augment": {
+      "main": [
+        [
+          {
+            "node": "Victor API Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call General Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Victor API Call": {
+      "main": [
+        [
+          {
+            "node": "Call Claude through LiteLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude through LiteLLM": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call General Model": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Responses": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Los_Angeles",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "9353291a-f16d-4335-b987-6b4b9aab0c6b",
+  "meta": {
+    "instanceId": "6ae5d679168504e8a108dd7865baf81abf5c060ee30ad01499ac127ef4e48f5c"
+  },
+  "id": "q4HmU8yS3EXLCXvF",
+  "tags": []
+}

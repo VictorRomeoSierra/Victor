@@ -265,3 +265,45 @@ docker-compose -f docker-compose.simple.yml logs -f victor-api
 2. Test N8N workflow integration
 3. Consider adding endpoint to regenerate embeddings
 4. Fine-tune system prompts if needed
+
+## Latest Session Progress (Session 5) - May 23, 2025
+
+### **Vector Database Testing**
+- [x] **Verified database contents**: 37k chunks successfully indexed in lua_chunks table
+- [x] **Tested vector search**: Working correctly, returns relevant XSAF code snippets
+- [x] **Search quality**: Hybrid search (text + vector) returning good results for "waypoint" queries
+
+### **N8N Configuration Updates**
+- [x] **Fixed domain configuration**: N8N now correctly uses n8n.victorromeosierra.com
+- [x] **Added environment variables**:
+  - `N8N_PROTOCOL=https`
+  - `N8N_EDITOR_BASE_URL=https://n8n.victorromeosierra.com/`
+- [x] **Fixed PostgreSQL credentials**: Updated to use dcs_user/secure_password
+- [x] **Rebuilt N8N container**: Fresh start with correct configuration
+- [x] **Webhook URL fixed**: Now showing correct domain in N8N interface
+
+### **Ollama Integration**
+- [x] **Created N8N workflow**: victor_ollama_chat_workflow.json for local Ollama routing
+- [x] **Available models identified**:
+  - codellama:latest (primary for DCS queries)
+  - qwen2.5-coder:latest
+  - deepseek-coder-v2:latest
+  - codestral:latest
+- [x] **Workflow design**: Routes DCS queries through Victor API for context enhancement
+- [ ] **JSON formatting issues**: N8N HTTP Request node having trouble with Ollama API format
+
+### **Current Status**
+- ✅ Victor API fully functional with integrated RAG
+- ✅ Vector database populated with 37k XSAF code chunks
+- ✅ N8N running with correct domain configuration
+- ✅ Webhook URL: `https://n8n.victorromeosierra.com/webhook-test/victor-local-chat`
+- ⚠️ N8N → Ollama integration needs JSON body format fixes
+
+### **Next Steps**
+1. **Fix N8N Ollama JSON formatting**: 
+   - Try using Code node to build request
+   - Or use Function node with proper JSON construction
+   - Consider using HTTP Request node in "Form Data" mode
+2. **Complete end-to-end testing** once JSON issue resolved
+3. **Configure Open-WebUI** to use N8N webhook endpoint
+4. **Document the complete working pipeline**
