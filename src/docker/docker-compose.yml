@@ -41,8 +41,10 @@ services:
       - DB_POSTGRESDB_PASSWORD=postgres
       - N8N_HOST=${N8N_HOST:-n8n.victorromeosierra.com}
       - N8N_PORT=5678
+      - N8N_PROTOCOL=https
       - NODE_ENV=production
       - WEBHOOK_URL=${WEBHOOK_URL:-https://n8n.victorromeosierra.com/}
+      - N8N_EDITOR_BASE_URL=https://n8n.victorromeosierra.com/
       - EXECUTIONS_PROCESS=main
       - VICTOR_API_URL=http://host.docker.internal:8000
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
